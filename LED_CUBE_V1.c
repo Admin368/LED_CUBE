@@ -187,10 +187,9 @@ void timer_0_ISR() interrupt 1{
 void init(){
 		P0 = 0;
 		P1 = 0;
-
 		//row = 0xff;
 		delay1=0;
-		setRow(0);
+		setRow(1);
 		nextColor = 0;
         changeColor(0);
         changeMode(0);
@@ -200,6 +199,6 @@ void init(){
 int main(){
 	init();
 	while(1){
-        P2=row;
+        P2 = row;
 	}
 }
