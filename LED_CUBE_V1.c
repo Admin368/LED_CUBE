@@ -12,32 +12,6 @@ uchar delay1;
 uchar row;
 uchar col;
 uchar shiftDirection;
-sbit X_R0 = P1^0;
-sbit X_R1 = P1^1;
-sbit X_R2 = P1^2;
-sbit X_R3 = P1^3;
-sbit X_R4 = P1^4;
-sbit X_R5 = P1^5;
-sbit X_R6 = P1^6;
-sbit X_R7 = P1^7;
-
-sbit X_B0 = P0^0;
-sbit X_B1 = P0^1;
-sbit X_B2 = P0^2;
-sbit X_B3 = P0^3;
-sbit X_B4 = P0^4;
-sbit X_B5 = P0^5;
-sbit X_B6 = P0^6;
-sbit X_B7 = P0^7;
-
-sbit Z_A0 = P2^0;
-sbit Z_A1 = P2^1;
-sbit Z_A2 = P2^2;
-sbit Z_A3 = P2^3;
-sbit Z_B0 = P2^4;
-sbit Z_B1 = P2^5;
-sbit Z_B2 = P2^6;
-sbit Z_B3 = P2^7;
 
 void Delay10ms()		//@11.0592MHz
 {
@@ -50,7 +24,6 @@ void Delay10ms()		//@11.0592MHz
 		while (--j);
 	} while (--i);
 }
-
 void delay(uchar max_dly){
 	uchar dly;
 	for(dly=0;dly<max_dly;dly++){
@@ -141,19 +114,14 @@ void changeMode(int mode){
 		case 0://stop motion
 			shiftDirection = 0;
 			break;
-		case 1://rise up
-			//newRow = 0;
-			//setRow(0);
+		case 1:
 			shiftDirection = 1;
 			break;
 		case 2://go down
-			//setRow(4);
 			shiftDirection = -1;
 			break;
 		case 4:
 			setCol(3);
-			//setRow(1)
-			//row = 0x01;
 			break;
 		case 5:
 			row = 0x0e;
@@ -234,7 +202,7 @@ void led(int colorIn,int ledIn){
 }
 int main(){
     int l=1;//led
-    int c=1;//color
+    int c=1;//colo
 	init();
 	while(2){
         P1=0x00;
