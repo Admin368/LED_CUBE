@@ -6,6 +6,8 @@ int mode1;
 int newRow;
 int newCol;
 int nextColor;
+
+uchar ledOut;
 uchar delay1;
 uchar row;
 uchar col;
@@ -133,8 +135,8 @@ void setNextColor(){
 
 void changeMode(int mode){
 	int total_modes = 6;
-	if(mode<0){mode=total_modes;}
-	if(mode>total_modes){mode=0;}
+	if(mode<0){mode=0;}
+	if(mode>total_modes){mode=total_modes;}
 	switch(mode){
 		case 0://stop motion
 			shiftDirection = 0;
@@ -196,9 +198,48 @@ void init(){
 		init_timer();
 		init_interupt();
 }
+void led(int colorIn,int ledIn){
+    int index = ledIn;
+    if(index<1){index=0;}//resets index if less than 0
+    if(index>64){index=64;}//resets index if greater than 64
+    if(index>0&&index<=8){P2=0xfe;}//row 1.1
+    if(index>8&&index<=16){P2=0xef;}//row1.2
+    if(index>16&&index<=24){P2=0xfd;}//row2.1
+    if(index>24&&index<=32){P2=0xdf;}//row2.2
+    if(index>32&&index<=40){P2=0xfb;}//row3.1
+    if(index>40&&index<=48){P2=0xbf;}//row3.2
+    if(index>48&&index<=56){P2=0xf7;}//row4.1
+    if(index>56&&index<=64){P2=0x7f;}//row4.2
+    index = index%16;//all leds are in 16 sets
+    ledOut = 0x01;// resets bin to 0000 0001
+    /// so that we can shift it using crol 
+    /// on the 16 positions available
+    switch(colorIn)
+    {
+    case 1://blue
+        P0 = _crol_(ledOut,(index-1));
+        P1 = 0;
+        break;
+    case 2://red
+        P0 = 0;
+        P1 = _crol_(ledOut,(index-1));
+        break;
+    case 3://purple
+        P0 = _crol_(ledOut,(index-1));
+        P1 = _crol_(ledOut,(index-1));
+        break;
+    default:
+        break;
+    }
+}
 int main(){
+    int l=1;//led
+    int c=1;//color
 	init();
-	while(1){
-        P2 = row;
+	while(2){
+        P1=0x00;
+        led(c,l);
+        delay(1);
+        l++;if(l>64){l=1;c++;if(c>3){c=1;}}
 	}
 }
