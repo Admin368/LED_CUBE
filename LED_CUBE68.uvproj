@@ -382,9 +382,9 @@
               <FilePath>.\STARTUP.A51</FilePath>
             </File>
             <File>
-              <FileName>LED_CUBE_V2.c</FileName>
+              <FileName>LED_CUBE_V3.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\LED_CUBE_V2.c</FilePath>
+              <FilePath>.\LED_CUBE_V3.c</FilePath>
             </File>
           </Files>
         </Group>
