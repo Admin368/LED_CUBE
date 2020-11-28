@@ -164,7 +164,7 @@ void init_interupt(){EA=1;ET0=1;}////////////////////////////////////
 void timer_0_ISR() interrupt 1{
 	timer_reload();
 	count++;
-	if(count%20==0){
+	if(count%20==0){//IF 1 SECOND////
 		flag=~flag;
 		last_seconds=seconds;
 		seconds++;
@@ -173,16 +173,16 @@ void timer_0_ISR() interrupt 1{
 		if(seconds>200){seconds=0;}
 	}
 	if(count>210){count=0;}
-}//IF 1 SECOND////
+}
 /////////////////////////////////////////////////////////////////////
 void init(){
-		l=1;
-		c=1;
+		l=1;//variable used as led#
+		c=1;//variable used as color (0-3)
 		P0=0;
 		P1=0;
 		modes=0;
-		seed1=0;
-		seed2=64;
+		seed1=0;//random varriable that counts from 0-64
+		seed2=64;//random varriable that counts from 0-64
 		delay1=0;
 		setRow(1);
 		nextColor = 0;
@@ -239,14 +239,14 @@ void resetVariable(){
 void action(int modeIn);//declaring it, code at bottom
 void autoMode(){
 	action(modes);
-	if(modes>9){modes=1;}
+	if(modes>8){modes=1;}
 }
 int main(){
 	init();
 	while(1 ){
 		//led(c,56);
-		action(0);
-		//autoMode();
+		//action(0);
+		autoMode();
 		resetVariable();
 	}
 }
@@ -273,32 +273,7 @@ void action(int modeIn){
 	switch (modeIn)
 	{
 	case 0:
-		i=100;
-		c=1;
-		led(c,54);
-		delayX(i);
-		led(c,55);
-		delayX(i);
-		led(c,58);
-		delayX(i);
-		led(c,59);
-		delayX(i);
-		led(c,38);
-		delayX(i);
-		led(c,39);
-		delayX(i);
-		led(c,42);
-		delayX(i);
-		led(c,43);
-		delayX(i);
-		led(c,22);
-		delayX(i);
-		led(c,23);
-		delayX(i);
-		led(c,26);
-		delayX(i);
-		led(c,27);
-		delayX(i);*/
+
 		break;
 	case 1:
 		led(c,l);
@@ -370,14 +345,7 @@ void action(int modeIn){
         delay(seed1);
 		break;
 	case 9:
-		for(i=0;i<seed1;i++){
-			led(c,i);
-			delay(10);
-			for(ij=64;ij>seed2;ij--){
-				led(c+1,ij);
-				delay(10);
-			}
-		}
+
 		break;	
 	case 10:
 		break;
