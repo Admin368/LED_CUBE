@@ -10,6 +10,8 @@ ADD
 #define uint unsigned char
 int modes;
 int mode1;
+int modeSet;
+int modeMax=12;// number of modes
 int newRow;
 int newCol;
 int nextColor;
@@ -19,12 +21,30 @@ int c;//color
 int seed1;//random value 1
 int seed2;//random value 2
 
+code int circle[]={1,2,3,4,8,12,16,15,14,13,9,5,1,17,18,19,20,24,28,32,31,30,29,25,21,17,33,34,35,36,40,44,48,47,46,45,41,37,33,49,50,51,52,56,60,64,63,62,61,57,53,49};
+xdata int circleIndex = 0;
+xdata int circleMax = 52;
+xdata int cVar = 1; //circle random variable
+
 uchar ledOut;
 uchar delay1;
 uchar row;
 uchar col;
 uchar shiftDirection;
 
+uchar isAutoModeOn; // if 1 is on , 0 if off 
+
+int var1=0;
+int var2=0;
+int var3=0;
+int var4=0;
+sbit buzzer = P3^0;
+sbit button1 = P3^4;
+sbit button2 = P3^5;
+sbit button3 = P3^6;
+sbit button4 = P3^7;
+
+int test1 = 0;
 void Delay1ms()//@11.0592MHz
 {unsigned char i, j;_nop_();
 _nop_();_nop_();
@@ -173,6 +193,7 @@ void timer_0_ISR() interrupt 1{
 		if(seconds>200){seconds=0;}
 	}
 	if(count>210){count=0;}
+    if(seconds>60){seconds=0;}
 }
 /////////////////////////////////////////////////////////////////////
 void init(){
@@ -180,6 +201,8 @@ void init(){
 		c=1;//variable used as color (0-3)
 		P0=0;
 		P1=0;
+        P3=1;//set all buttons to high, they turn 0 when presses
+        isAutoModeOn = 1; //if 1 = on , if 0 = off;
 		modes=0;
 		seed1=0;//random varriable that counts from 0-64
 		seed2=64;//random varriable that counts from 0-64
@@ -239,15 +262,66 @@ void resetVariable(){
 void action(int modeIn);//declaring it, code at bottom
 void autoMode(){
 	action(modes);
-	if(modes>8){modes=1;}
+	if(modes>modeMax){modes=0;}
+}
+void allLights(int colorIn){
+    for(seed1=1;seed1<5;seed1++){
+            changeColor(colorIn);
+            setRow(seed1);
+            //P2 = 0x00;
+            P2 = row;
+            delayX(30);
+        }
 }
 int main(){
 	init();
+    modeSet = 0;
+    button1 = 1;
+    button2 = 1;
+    button3 = 1;
+    buzzer = 0;
 	while(1 ){
 		//led(c,56);
-		//action(0);
-		autoMode();
+        if(isAutoModeOn==1){autoMode();}
+        else if(isAutoModeOn==0){action(modeSet);}
+
+        if(button1==0){//prev mode button
+            delay(1);
+                while(button1==0){//verifying button press
+                    if(isAutoModeOn==1){modeSet=modes;}//copies value of current mode while in auto
+                    isAutoModeOn=0;//disables automode
+                    buzzer =1;//BUZZER SOUND
+                    action(modeSet);
+                }
+                buzzer = 0;
+                modeSet--;
+                if(modeSet<0){modeSet=modeMax;}
+        }
+        if(button2==0){//next mode button
+            delay(1);
+                while(button2==0){//verifying button press
+                    if(isAutoModeOn==1){modeSet=modes;}//copies value of current mode while in auto
+                    isAutoModeOn=0;//disables automode
+                    buzzer =1;
+                    action(modeSet);
+                }
+                buzzer = 0;
+                modeSet++;
+                if(modeSet>modeMax){modeSet=0;}
+        }
 		resetVariable();
+        if(button3==0){//AUTO MODE ON
+            delay(1);
+                while(button3==0){
+                    if(isAutoModeOn==0){modes=modeSet;}
+                    isAutoModeOn =1;
+                    action(10);
+                    //autoMode();
+                    //allLights(2);
+                    buzzer = 1;
+                }
+                buzzer = 0;
+        }
 	}
 }
 /*
@@ -273,8 +347,7 @@ void action(int modeIn){
 	switch (modeIn)
 	{
 	case 0:
-        P2 = 0;
-        changeColor(0);
+        
 		break;
 	case 1:
 		led(c,l);
@@ -346,12 +419,46 @@ void action(int modeIn){
         delay(seed1);
 		break;
 	case 9:
-
+        i = seed1*seed2;
+        led(c,(i%64));
+        delay(1);
 		break;	
 	case 10:
+        allLights(seconds%3);
 		break;
 	case 11:
+        setNextColor();
+        i = (nextColor*l*c);
+        led(c,i);
+        delay(7);
+        led(c+0,i%16);
+        delay(7);
+        led(c+1,i%24);
+        delay(7);
+        led(c+2,i%32);
+        delay(7);
+        led(c+3,i%48);
+        delay(7);
+        //delay(1);
 		break;
+    case 12:
+        if(var1<1){var1=1;}//var1 used for color
+        circleIndex=circleIndex+cVar;
+        if(circleIndex>42){
+            //circleIndex=0;
+            //setNextColor();
+            var1++;//used for color
+            if(var1>3){var1=1;}
+            cVar = -1;
+        }
+        if(circleIndex<3){cVar=1;}
+        led(var1,circle[circleIndex]);
+        delay(c);
+        led(var1+1,circle[circleIndex+4]);
+        delay(c);
+        led(var1+2,circle[circleIndex+8]);
+        delay(c);
+        break;
 	default:
 		break;
 	}
