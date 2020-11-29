@@ -31,15 +31,19 @@ uchar delay1;
 uchar row;
 uchar col;
 uchar shiftDirection;
-
+uchar isFadeRunning = 0;
 uchar isAutoModeOn; // if 1 is on , 0 if off 
+
+uchar fadeState;//1 if fading to on,  3 fading to off
+uchar fadeDelay;//time light stay
+uchar fadeIndex;//degree of brightness
 
 int var1=0;
 int var2=0;
 int var3=0;
 int var4=0;
 	
-uchar uVar1=1;//uchar random variables
+static uchar uVar1=0xff;//uchar random variables
 uchar uVar2=1;//uchar random variables
 	
 sbit buzzer = P3^0;
@@ -205,16 +209,23 @@ void init(){
 		c=1;//variable used as color (0-3)
 		P0=0;
 		P1=0;
-        P3=1;//set all buttons to high, they turn 0 when presses
-        isAutoModeOn = 1; //if 1 = on , if 0 = off;
 		modes=0;
+		modeSet = 0;
 		seed1=0;//random varriable that counts from 0-64
 		seed2=64;//random varriable that counts from 0-64
 		delay1=0;
 		setRow(1);
+		P3=1;//set all buttons to high, they turn 0 when presses
+		button1 = 1;//button init
+		button2 = 1;//button init
+		button3 = 1;//button init
+		button4 = 1;//button init
+		buzzer = 0;
 		nextColor = 0;
+		isAutoModeOn = 1; //if 1 = on , if 0 = off;
         changeColor(0);
         changeMode(0);
+		nextColor = 0;
 		init_timer();
 		init_interupt();
 }
@@ -277,25 +288,32 @@ void allLights(int colorIn){
             delayX(30);
         }
 }
-int main(){
-	init();
-    modeSet = 0;
-    button1 = 1;
-    button2 = 1;
-    button3 = 1;
-		button4 = 1;
-    buzzer = 0;
-	while(1 ){
-		//led(c,56);
-        if(isAutoModeOn==1){autoMode();}
-        else if(isAutoModeOn==0){action(modeSet);}
-				resetVariable();
-        if(button1==0){//prev mode button
+void allLightsON(){
+	P2 = 0x00;
+}
+void allLightOFF(){
+	P2 = 0xff;
+}
+void brightness(uchar value){//0=off 100=full bright
+	uchar b;
+	if(value<0){value=0;}
+	if(value>100){value=100;}
+	for(b=0;b<100;b++){
+		if(b<=value){
+			allLightsON();
+		}
+		else if(b>value){
+			allLightOFF();
+		}
+	}
+}
+void checkButtons(){
+	if(button1==0){//prev mode button
             delay(1);
                 while(button1==0){//verifying button press
-                    if(isAutoModeOn==1){modeSet=modes;}//copies value of current mode while in auto
+					if(isAutoModeOn==1){modeSet=modes;}//copies value of current mode while in auto
                     isAutoModeOn=0;//disables automode
-                    buzzer =1;//BUZZER SOUND
+					buzzer =1;//BUZZER SOUND
                     action(modeSet);
                 }
                 buzzer = 0;
@@ -305,9 +323,9 @@ int main(){
         if(button2==0){//next mode button
             delay(1);
                 while(button2==0){//verifying button press
-                    if(isAutoModeOn==1){modeSet=modes;}//copies value of current mode while in auto
+					if(isAutoModeOn==1){modeSet=modes;}//copies value of current mode while in auto
                     isAutoModeOn=0;//disables automode
-                    buzzer =1;
+					buzzer =1;
                     action(modeSet);
                 }
                 buzzer = 0;
@@ -317,17 +335,17 @@ int main(){
         if(button3==0){//AUTO MODE ON
             delay(1);
                 while(button3==0){
-                    if(isAutoModeOn==0){modes=modeSet;}//copies value of current mode while in auto
+					if(isAutoModeOn==0){modes=modeSet;}//copies value of current mode while in auto
                     isAutoModeOn =1;//activates auto mode
                     action(10);//all lights on to show you are pressing
                     buzzer = 1;// buzzer sounds
                 }
                 buzzer = 0;
         }
-				if(button4==0){//sets mode to mode 0 RESET OR STOP OR TESTING AT MODE 0
+		if(button4==0){//sets mode to mode 0 RESET OR STOP OR TESTING AT MODE 0
             delay(1);
-                while(button2==0){//verifying button press
-                    if(isAutoModeOn==1){modeSet=modes;}//copies value of current mode while in auto
+                while(button4==0){//verifying button press
+					if(isAutoModeOn==1){modeSet=modes;}//copies value of current mode while in auto
                     isAutoModeOn=0;//disables automode
                     buzzer =1;
                     action(10);
@@ -335,7 +353,17 @@ int main(){
                 buzzer = 0;//buzzer off
                 modeSet=0;
         }
-				buzzer = 0;// making sure buzzer is off
+				buzzer = 0;
+}
+
+int main(){
+	init();
+	while(1 ){
+        if(isAutoModeOn==1){autoMode();}
+        else if(isAutoModeOn==0){action(modeSet);}
+		checkButtons();
+		resetVariable();
+        // making sure buzzer is off
 	}
 }
 /*
@@ -361,12 +389,61 @@ void action(int modeIn){
 	switch (modeIn)
 	{
 	case 0:
-				//uVar1++;
-				//if(uVar1>64){uVar=0;}
-				P1 = P1 == 0x00? 0xff:0x00;
-				delay(10);
-        //uVar1 = uVar1&_crow_(uVar1,1);
-				//led(uVar1);
+		P0=0;
+		P1=0;
+		P2=0;
+		//setNextColor();
+		changeColor(nextColor);
+		/*
+		state0- prepare for fade
+		state1- fading to on
+		state2- staying on
+		state3- fading to off
+		state4- staying off
+		*/
+		switch (fadeState)
+		{
+		case 0:// prepare for fading
+			if(count%l==0){fadeIndex=0;}
+			fadeDelay=0;
+			fadeState = 1;// ready for fading on
+			break;
+		case 1://state1 - fading to On
+			if(count%2==0){fadeIndex++;}
+			if(fadeIndex>=100){
+				fadeIndex=100;//make sure it stays 100
+				fadeState=2;//next time stay on
+			}
+			brightness(fadeIndex);
+			break;
+		case 2://state2 - staying On
+			if(count%2==0){fadeDelay++;}
+			if(fadeDelay>=100){
+				fadeIndex=100;//make sure it stays 100
+				fadeState=3;//next state
+			}
+			brightness(fadeIndex);
+			break;
+		case 3://state3 - fading to Off
+			if(count%2==0){fadeIndex--;}
+			if(fadeIndex<=0){
+				fadeIndex=0; //make sure ist 0
+				fadeState=4;
+			}
+			brightness(fadeIndex);
+			break;
+		case 4://state4 - staying Off
+			if(count%2==0){fadeDelay++;}
+			if(fadeDelay>=100){
+				fadeIndex=0;
+				fadeState=0;//resets to state 0;
+			}
+			setNextColor();
+			//changeColor(nextColor);
+			break;
+		default:
+			break;
+		}
 		break;
 	case 1:
 		led(c,l);
@@ -464,8 +541,6 @@ void action(int modeIn){
         if(var1<1){var1=1;}//var1 used for color
         circleIndex=circleIndex+cVar;
         if(circleIndex>42){
-            //circleIndex=0;
-            //setNextColor();
             var1++;//used for color
             if(var1>3){var1=1;}
             cVar = -1;
@@ -478,6 +553,28 @@ void action(int modeIn){
         led(var1+2,circle[circleIndex+8]);
         delay(c);
         break;
+	case 13://blinking
+		P2 = P2 == 0x00? 0xff:0x00;
+		delay(l%30);
+		if(l==1){
+			setNextColor();
+			changeColor(nextColor);
+		}
+		break;
+	case 14:
+		break;
+	case 15:
+		break;
+	case 16:;
+		break;
+	case 17:
+		break;
+	case 18:
+		break;
+	case 19:
+		break;
+	case 20:
+		break;
 	default:
 		break;
 	}
