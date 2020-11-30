@@ -127,3 +127,4 @@ void timer_0_interrupt() interrupt 1 using 1
 {
 	 count++;    // 3.6 overflows aprox. to 1 millisecond 
 }
+

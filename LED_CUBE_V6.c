@@ -1,11 +1,12 @@
 #include <reg52.h>
 #include <intrins.h>
+#include <paulobetaX[LED_CUBE-MOD].h>
+#include "IR_API\infraredRemConApi.c"
 #define uchar unsigned char
-#define uuchar unsigned char
 uchar modes;
 uchar mode1;
 uchar modeSet;
-uchar modeMax=13;// number of modes
+uchar modeMax=14;// number of modes
 uchar newRow;
 uchar newCol;
 uchar nextColor;
@@ -37,9 +38,11 @@ uchar var2=0;
 uchar var3=0;
 uchar var4=0;
 	
-static uchar uVar1=0xff;//uchar random variables
+uchar uVar1=0xff;//uchar random variables
 uchar uVar2=1;//uchar random variables
-	
+
+uchar button;//variable that stores value of button
+
 sbit buzzer = P3^0;
 sbit button1 = P3^4;
 sbit button2 = P3^5;
@@ -301,6 +304,20 @@ void brightness(uchar value){//0=off 100=full bright
 		}
 	}
 }
+void displayNumber(uchar numberIn){
+	xled(numberIn);
+	if(numberIn<10){
+		xsegment(1);
+		xdigit(numberIn);
+	}
+	else if(numberIn>10){
+		xsegment(1);
+		xdigit(numberIn/10);
+		xdelay(1);
+		xsegment(2);
+		xdigit(numberIn%10);
+	}
+}
 void checkButtons(){
 	if(button1==0){//prev mode button
             delay(1);
@@ -308,7 +325,8 @@ void checkButtons(){
 					if(isAutoModeOn==1){modeSet=modes;}//copies value of current mode while in auto
                     isAutoModeOn=0;//disables automode
 					buzzer =1;//BUZZER SOUND
-                    action(modeSet);
+					displayNumber(modeSet);
+                    //action(modeSet);
                 }
                 buzzer = 0;
                 modeSet--;
@@ -320,7 +338,8 @@ void checkButtons(){
 					if(isAutoModeOn==1){modeSet=modes;}//copies value of current mode while in auto
                     isAutoModeOn=0;//disables automode
 					buzzer =1;
-                    action(modeSet);
+					displayNumber(modeSet);
+                    //action(modeSet);
                 }
                 buzzer = 0;
                 modeSet++;
@@ -332,7 +351,8 @@ void checkButtons(){
 					if(isAutoModeOn==0){modes=modeSet;}//copies value of current mode while in auto
                     isAutoModeOn =1;//activates auto mode
                     action(10);//all lights on to show you are pressing
-                    buzzer = 1;// buzzer sounds
+                    displayNumber(modeSet);
+					buzzer = 1;// buzzer sounds
                 }
                 buzzer = 0;
         }
@@ -350,30 +370,22 @@ void checkButtons(){
 				buzzer = 0;
 }
 
+void checkRemote();
 uchar main(){
 	init();
+	isAutoModeOn=0;
+	modeSet=14;
 	while(1 ){
         if(isAutoModeOn==1){autoMode();}
         else if(isAutoModeOn==0){action(modeSet);}
 		checkButtons();
+		checkRemote();
+		//displayNumber(modeSet);
 		resetVariable();
         // making sure buzzer is off
 	}
 }
-/*
-0.
-i=100;c=1;led(c,54);delayX(i);led(c,55);delayX(i);led(c,58);delayX(i);
-led(c,59);delayX(i);led(c,38);delayX(i);led(c,39);delayX(i);led(c,42);
-delayX(i);led(c,43);delayX(i);led(c,22);delayX(i);led(c,23);delayX(i);
-led(c,26);delayX(i);led(c,27);delayX(i);
 
-1.
-i=100;c=1;led(c,54);delayX(i);led(c,58);delayX(i);led(c,38);delayX(i);
-led(c,42);delayX(i);led(c,22);delayX(i);led(c,26);delayX(i);
-
-2.
-
-*/
 void action(uchar modeIn){
 	//seed is random value you can use
 	uchar i;
@@ -383,61 +395,7 @@ void action(uchar modeIn){
 	switch (modeIn)
 	{
 	case 0:
-		P0=0;
-		P1=0;
-		P2=0;
-		//setNextColor();
-		changeColor(nextColor);
-		/*
-		state0- prepare for fade
-		state1- fading to on
-		state2- staying on
-		state3- fading to off
-		state4- staying off
-		*/
-		switch (fadeState)
-		{
-		case 0:// prepare for fading
-			if(count%l==0){fadeIndex=0;}
-			fadeDelay=0;
-			fadeState = 1;// ready for fading on
-			break;
-		case 1://state1 - fading to On
-			if(count%2==0){fadeIndex++;}
-			if(fadeIndex>=100){
-				fadeIndex=100;//make sure it stays 100
-				fadeState=2;//next time stay on
-			}
-			brightness(fadeIndex);
-			break;
-		case 2://state2 - staying On
-			if(count%2==0){fadeDelay++;}
-			if(fadeDelay>=100){
-				fadeIndex=100;//make sure it stays 100
-				fadeState=3;//next state
-			}
-			brightness(fadeIndex);
-			break;
-		case 3://state3 - fading to Off
-			if(count%2==0){fadeIndex--;}
-			if(fadeIndex<=0){
-				fadeIndex=0; //make sure ist 0
-				fadeState=4;
-			}
-			brightness(fadeIndex);
-			break;
-		case 4://state4 - staying Off
-			if(count%2==0){fadeDelay++;}
-			if(fadeDelay>=100){
-				fadeIndex=0;
-				fadeState=0;//resets to state 0;
-			}
-			setNextColor();
-			//changeColor(nextColor);
-			break;
-		default:
-			break;
-		}
+		
 		break;
 	case 1:
 		led(c,l);
@@ -531,7 +489,7 @@ void action(uchar modeIn){
         delay(7);
         //delay(1);
 		break;
-    case 12:
+    case 12://circles chase
         if(var1<1){var1=1;}//var1 used for color
         circleIndex=circleIndex+cVar;
         if(circleIndex>42){
@@ -548,6 +506,9 @@ void action(uchar modeIn){
         delay(c);
         break;
 	case 13://blinking
+		P0=0;
+		P1=0;
+		changeColor(nextColor);
 		P2 = P2 == 0x00? 0xff:0x00;
 		delay(l%30);
 		if(l==1){
@@ -555,7 +516,62 @@ void action(uchar modeIn){
 			changeColor(nextColor);
 		}
 		break;
-	case 14:
+	case 14://fade
+		P0=0;
+		P1=0;
+		P2=0;
+		//setNextColor();
+		changeColor(nextColor);
+		/*
+		state0- prepare for fade
+		state1- fading to on
+		state2- staying on
+		state3- fading to off
+		state4- staying off
+		*/
+		switch (fadeState)
+		{
+		case 0:// prepare for fading
+			if(count%2==0){fadeIndex=0;}
+			fadeDelay=0;
+			fadeState = 1;// ready for fading on
+			break;
+		case 1://state1 - fading to On
+			if(count%2==0){fadeIndex++;}
+			if(fadeIndex>=100){
+				fadeIndex=100;//make sure it stays 100
+				fadeState=2;//next time stay on
+			}
+			brightness(fadeIndex);
+			break;
+		case 2://state2 - staying On
+			if(count%2==0){fadeDelay++;}
+			if(fadeDelay>=100){
+				fadeIndex=100;//make sure it stays 100
+				fadeState=3;//next state
+			}
+			brightness(fadeIndex);
+			break;
+		case 3://state3 - fading to Off
+			if(count%2==0){fadeIndex--;}
+			if(fadeIndex<=0){
+				fadeIndex=0; //make sure ist 0
+				fadeState=4;
+			}
+			brightness(fadeIndex);
+			break;
+		case 4://state4 - staying Off
+			if(count%2==0){fadeDelay++;}
+			if(fadeDelay>=100){
+				fadeIndex=0;
+				fadeState=0;//resets to state 0;
+			}
+			setNextColor();
+			//changeColor(nextColor);
+			break;
+		default:
+			break;
+		}
 		break;
 	case 15:
 		break;
@@ -572,4 +588,66 @@ void action(uchar modeIn){
 	default:
 		break;
 	}
+}
+void checkRemote(){
+		button = irCodeDecoder();
+		switch(button)
+		{
+			case 0://CH-
+
+				break;
+			case 1://CH
+				break; 
+			case 2://CH+
+				break;
+			case 3://PREV     
+				break;; 
+			case 4://NEXT
+
+				break;
+			case 5://PLAY/PAUSE
+
+				break; 
+			case 6://VOL-
+
+				break;  
+			case 7://VOL+
+
+				break;  
+			case 8://EQ [DONT WORK WELL]  
+
+				break;
+			case 9://0
+				break; 
+			case 10://100+ [DONT WORK WELL]  
+				break;
+			case 11://200+ [DONT WORK WELL]     
+				break;; 
+			case 12: //1
+				isAutoModeOn = 0;
+				modeSet = 1;
+				break;
+			case 13://2
+
+				break; 
+			case 14://3
+
+				break;  
+			case 15://4
+
+				break;
+			case 16://5
+
+				break;
+			case 17://6
+				break; 
+			case 18://7
+				break;
+			case 19://8   
+				break;
+			case 20://9
+				break;           
+			default: 
+				break;       
+		}	
 }
