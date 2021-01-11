@@ -11,6 +11,7 @@ uchar dataCode1 = 0x00;  // the infrared code, its inverse is dataCode2
 void initInfraredRemCon();//initialization,{call first} 
 uchar irCodeDecoder();    // get pressed button 
 static void  pulsePosiDem();     //ifrared pulse position demodulation
+void timer_reload(){TH0=(65536-46082)/256;TL0=(65536-46082)%256;}
 void initInfraredRemCon() // initialize infrared remote control
 {
 	// external interrupt 0
@@ -92,6 +93,7 @@ uchar irCodeDecoder()
 
 }
 
+
 void extInterrupt0() interrupt 0
 {
 	
@@ -99,7 +101,8 @@ void extInterrupt0() interrupt 0
 		{   
 				bootCode = 0;
 				count2 = 0;
-				TR0 = 1;
+				//TR0 = 1;
+				timer_reload();
 		} 
 		else 
 		{		
@@ -116,7 +119,8 @@ void extInterrupt0() interrupt 0
 						{
 								i = 31;
 								bootCode = 1;
-								TR0 = 0; 	   // turn off timer	
+								//TR0 = 0; 	   // turn off timer	
+								timer_reload();
 								newCode = 1;
 						}
 				}
